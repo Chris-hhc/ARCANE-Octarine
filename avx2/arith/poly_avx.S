@@ -261,4 +261,97 @@ poly_decompress_avx:
     ret
 .size poly_decompress_avx, .-poly_decompress_avx
 
+.globl poly_shift_avx
+.type poly_shift_avx, @function
+poly_shift_avx:
+    vmovd xmm1, esi
+    xor eax, eax
+.Lshift_loop:
+    vmovdqu ymm0, YMMWORD PTR [rdi + rax]
+    vmovdqu ymm2, YMMWORD PTR [rdi + rax + 32]
+    vmovdqu ymm3, YMMWORD PTR [rdi + rax + 64]
+    vmovdqu ymm4, YMMWORD PTR [rdi + rax + 96]
+    vpslld ymm0, ymm0, xmm1
+    vpslld ymm2, ymm2, xmm1
+    vpslld ymm3, ymm3, xmm1
+    vpslld ymm4, ymm4, xmm1
+    vmovdqu YMMWORD PTR [rdi + rax], ymm0
+    vmovdqu YMMWORD PTR [rdi + rax + 32], ymm2
+    vmovdqu YMMWORD PTR [rdi + rax + 64], ymm3
+    vmovdqu YMMWORD PTR [rdi + rax + 96], ymm4
+    add rax, 128
+    cmp rax, 4096
+    jb .Lshift_loop
+
+    vzeroupper
+    ret
+.size poly_shift_avx, .-poly_shift_avx
+
+.globl poly_power2round_avx
+.type poly_power2round_avx, @function
+poly_power2round_avx:
+    mov r10d, ecx
+
+    mov eax, 1
+    lea ecx, [r10d - 1]
+    shl eax, cl
+    mov r8d, eax
+    lea r9d, [rax + rax - 1]
+
+    vmovd xmm0, r8d
+    vpbroadcastd ymm0, xmm0
+    vmovd xmm1, r9d
+    vpbroadcastd ymm1, xmm1
+    vmovd xmm2, r10d
+
+    xor eax, eax
+.Lpower2round_loop:
+    vmovdqu ymm3, YMMWORD PTR [rdx + rax]
+    vpaddd ymm4, ymm3, ymm0
+    vpand ymm4, ymm4, ymm1
+    vpsubd ymm4, ymm4, ymm0
+    vpsubd ymm5, ymm3, ymm4
+    vpsrad ymm5, ymm5, xmm2
+    vmovdqu YMMWORD PTR [rdi + rax], ymm4
+    vmovdqu YMMWORD PTR [rsi + rax], ymm5
+    add rax, 32
+    cmp rax, 4096
+    jb .Lpower2round_loop
+
+    vzeroupper
+    ret
+.size poly_power2round_avx, .-poly_power2round_avx
+
+.globl poly_apply_hint_avx
+.type poly_apply_hint_avx, @function
+poly_apply_hint_avx:
+    vpxor ymm0, ymm0, ymm0
+    vpcmpeqd ymm7, ymm7, ymm7
+    vpsubd ymm6, ymm0, ymm7
+    vpaddd ymm5, ymm6, ymm6
+
+    xor eax, eax
+.Lapply_hint_loop:
+    vmovdqu ymm1, YMMWORD PTR [rdi + rax]
+    vmovdqu ymm2, YMMWORD PTR [rsi + rax]
+    vmovdqu ymm3, YMMWORD PTR [rdx + rax]
+
+    vpsrad ymm2, ymm2, 31
+    vpand ymm2, ymm2, ymm5
+    vpsubd ymm2, ymm6, ymm2
+
+    vpcmpeqd ymm4, ymm3, ymm0
+    vpxor ymm4, ymm4, ymm7
+    vpand ymm2, ymm2, ymm4
+    vpaddd ymm1, ymm1, ymm2
+
+    vmovdqu YMMWORD PTR [rdi + rax], ymm1
+    add rax, 32
+    cmp rax, 4096
+    jb .Lapply_hint_loop
+
+    vzeroupper
+    ret
+.size poly_apply_hint_avx, .-poly_apply_hint_avx
+
 .section .note.GNU-stack,"",@progbits

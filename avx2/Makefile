@@ -2,6 +2,7 @@ CC = gcc
 CFLAGS += -O3
 CFLAGS += -mavx2
 CFLAGS += -mbmi2
+CFLAGS += -flto -fno-semantic-interposition -funroll-loops -fno-inline-functions-called-once
 CFLAGS += -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls \
   -Wshadow -Wpointer-arith -fomit-frame-pointer
 RM = /bin/rm

@@ -1,6 +1,6 @@
-# RRLWR SIGN
+# ARCANE Octarine
 
-This repository contains two aligned implementations of RRLWR SIGN:
+This repository contains two aligned implementations of ARCANE Octarine:
 
 - `avx2/`: optimized AVX2 implementation.
 - `ref/`: scalar C reference implementation.
@@ -124,15 +124,31 @@ These numbers come from `test/test_speed_SIGN.c`.
 
 | Security | Stage | AVX2 median | REF median | Speedup |
 | --- | --- | ---: | ---: | ---: |
-| SIGN128 | keygen | 81,620 | 453,264 | 5.55x |
-| SIGN128 | sign | 214,101 | 1,369,972 | 6.40x |
-| SIGN128 | verify | 106,610 | 642,224 | 6.02x |
-| SIGN256 | keygen | 158,125 | 947,913 | 5.99x |
-| SIGN256 | sign | 395,821 | 2,679,901 | 6.77x |
-| SIGN256 | verify | 198,835 | 1,285,736 | 6.47x |
-| SIGN512 | keygen | 401,493 | 2,758,914 | 6.87x |
-| SIGN512 | sign | 1,309,686 | 9,612,832 | 7.34x |
-| SIGN512 | verify | 484,236 | 3,543,268 | 7.32x |
+| SIGN128 | keygen | 79,689 | 453,264 | 5.69x |
+| SIGN128 | sign | 202,639 | 1,369,972 | 6.76x |
+| SIGN128 | verify | 102,289 | 642,224 | 6.28x |
+| SIGN256 | keygen | 154,830 | 947,913 | 6.12x |
+| SIGN256 | sign | 382,162 | 2,679,901 | 7.01x |
+| SIGN256 | verify | 196,268 | 1,285,736 | 6.55x |
+| SIGN512 | keygen | 383,782 | 2,758,914 | 7.19x |
+| SIGN512 | sign | 1,230,276 | 9,612,832 | 7.81x |
+| SIGN512 | verify | 475,594 | 3,543,268 | 7.45x |
+
+## Compare With Dilithium
+
+These numbers are **median cycles/ticks** from ARCANE Octarine
+`avx2/test/test_speed_SIGN128`, ARCANE Octarine
+`avx2/test/test_speed_SIGN256`, Dilithium `avx2/test/test_speed2`, and
+Dilithium `avx2/test/test_speed5`.
+
+| Comparison | Stage | ARCANE Octarine median | Dilithium median | Faster |
+| --- | --- | ---: | ---: | --- |
+| SIGN128 vs Dilithium2 | keygen/keypair | **79,470** | 87,330 | ARCANE Octarine, 1.10x |
+| SIGN128 vs Dilithium2 | sign | **201,883** | 205,427 | ARCANE Octarine, 1.02x |
+| SIGN128 vs Dilithium2 | verify | 102,485 | **91,562** | Dilithium, 1.12x |
+| SIGN256 vs Dilithium5 | keygen/keypair | **154,568** | 236,033 | ARCANE Octarine, 1.53x |
+| SIGN256 vs Dilithium5 | sign | **380,788** | 441,321 | ARCANE Octarine, 1.16x |
+| SIGN256 vs Dilithium5 | verify | **197,319** | 238,195 | ARCANE Octarine, 1.21x |
 
 ## Kernel Breakdown
 
@@ -144,106 +160,106 @@ path uses the direct scalar ring multiplication path.
 
 | Kernel/stage | AVX2 median | REF median | Speedup |
 | --- | ---: | ---: | ---: |
-| keygen total | 83,837 | 455,325 | 5.43x |
-| keygen random/hash | 9,047 | 9,122 | 1.01x |
-| keygen A sampling/prepare | 22,454 | 27,325 | 1.22x |
-| keygen secret sampling | 2,653 | 6,897 | 2.60x |
-| keygen A*s1 | 32,280 | 390,415 | 12.09x |
-| keygen pack s1 | 558 | 1,080 | 1.94x |
-| keygen round s2 | 1,077 | 1,595 | 1.48x |
-| keygen pack b | 1,862 | 4,376 | 2.35x |
-| keygen hash/store | 13,126 | 13,322 | 1.01x |
-| sign total | 215,560 | 1,368,126 | 6.35x |
-| sign prepare A | 22,896 | 141,427 | 6.18x |
-| sign unpack+NTT secret | 19,627 | 168,860 | 8.60x |
-| sign hash mu/rhopp | 12,687 | 13,007 | 1.03x |
-| sign sample y | 16,549 | 46,666 | 2.82x |
-| sign NTT y x2 | 29,746 | 225,393 | 7.58x |
-| sign A*y | 35,740 | 332,457 | 9.30x |
-| sign w1/hash ctilde | 19,558 | 21,090 | 1.08x |
-| sign sample c+NTT | 15,398 | 113,061 | 7.34x |
-| sign c*s2/check w | 18,180 | 147,388 | 8.11x |
-| sign c*s1/check y | 8,888 | 73,516 | 8.27x |
-| sign c*b0/hint | 10,034 | 74,600 | 7.43x |
-| sign pack signature | 4,451 | 7,316 | 1.64x |
-| verify total | 106,803 | 643,358 | 6.02x |
-| verify unpack/check | 1,657 | 4,717 | 2.85x |
-| verify prepare A | 22,784 | 27,729 | 1.22x |
-| verify A*z | 32,041 | 389,386 | 12.15x |
-| verify sample c+NTT | 7,741 | 56,703 | 7.33x |
-| verify unpack hint | 715 | 850 | 1.19x |
-| verify c*b1/w1 | 15,723 | 130,795 | 8.32x |
-| verify hash compare | 25,022 | 25,114 | 1.00x |
+| keygen total | 81,767 | 455,325 | 5.57x |
+| keygen random/hash | 8,786 | 9,122 | 1.04x |
+| keygen A sampling/prepare | 22,388 | 27,325 | 1.22x |
+| keygen secret sampling | 2,482 | 6,897 | 2.78x |
+| keygen A*s1 | 30,848 | 390,415 | 12.66x |
+| keygen pack s1 | 534 | 1,080 | 2.02x |
+| keygen round s2 | 920 | 1,595 | 1.73x |
+| keygen pack b | 1,782 | 4,376 | 2.46x |
+| keygen hash/store | 13,227 | 13,322 | 1.01x |
+| sign total | 206,885 | 1,368,126 | 6.61x |
+| sign prepare A | 22,593 | 141,427 | 6.26x |
+| sign unpack+NTT secret | 19,363 | 168,860 | 8.72x |
+| sign hash mu/rhopp | 12,700 | 13,007 | 1.02x |
+| sign sample y | 16,381 | 46,666 | 2.85x |
+| sign NTT y x2 | 26,315 | 225,393 | 8.57x |
+| sign A*y | 35,360 | 332,457 | 9.40x |
+| sign w1/hash ctilde | 19,315 | 21,090 | 1.09x |
+| sign sample c+NTT | 15,426 | 113,061 | 7.33x |
+| sign c*s2/check w | 16,454 | 147,388 | 8.96x |
+| sign c*s1/check y | 8,128 | 73,516 | 9.04x |
+| sign c*b0/hint | 8,995 | 74,600 | 8.29x |
+| sign pack signature | 3,720 | 7,316 | 1.97x |
+| verify total | 103,583 | 643,358 | 6.21x |
+| verify unpack/check | 1,460 | 4,717 | 3.23x |
+| verify prepare A | 22,252 | 27,729 | 1.25x |
+| verify A*z | 30,345 | 389,386 | 12.83x |
+| verify sample c+NTT | 7,753 | 56,703 | 7.31x |
+| verify unpack hint | 699 | 850 | 1.22x |
+| verify c*b1/w1 | 15,561 | 130,795 | 8.41x |
+| verify hash compare | 24,681 | 25,114 | 1.02x |
 
 ### SIGN256
 
 | Kernel/stage | AVX2 median | REF median | Speedup |
 | --- | ---: | ---: | ---: |
-| keygen total | 160,365 | 986,945 | 6.15x |
-| keygen random/hash | 9,289 | 9,289 | 1.00x |
-| keygen A sampling/prepare | 48,248 | 53,866 | 1.12x |
-| keygen secret sampling | 3,684 | 7,624 | 2.07x |
-| keygen A*s1 | 67,765 | 877,696 | 12.95x |
-| keygen pack s1 | 1,062 | 1,748 | 1.65x |
-| keygen round s2 | 2,172 | 2,791 | 1.28x |
-| keygen pack b | 4,331 | 8,122 | 1.88x |
-| keygen hash/store | 22,758 | 22,968 | 1.01x |
-| sign total | 403,694 | 2,790,125 | 6.91x |
-| sign prepare A | 48,935 | 295,854 | 6.05x |
-| sign unpack+NTT secret | 39,527 | 356,688 | 9.02x |
-| sign hash mu/rhopp | 13,107 | 13,271 | 1.01x |
-| sign sample y | 32,063 | 95,023 | 2.96x |
-| sign NTT y x2 | 61,897 | 479,730 | 7.75x |
-| sign A*y | 77,743 | 793,263 | 10.20x |
-| sign w1/hash ctilde | 31,760 | 35,700 | 1.12x |
-| sign sample c+NTT | 16,337 | 120,442 | 7.37x |
-| sign c*s2/check w | 27,924 | 229,995 | 8.24x |
-| sign c*s1/check y | 17,650 | 152,567 | 8.64x |
-| sign c*b0/hint | 19,789 | 154,726 | 7.82x |
-| sign pack signature | 10,645 | 12,755 | 1.20x |
-| verify total | 201,753 | 1,338,997 | 6.64x |
-| verify unpack/check | 3,206 | 11,086 | 3.46x |
-| verify prepare A | 48,307 | 54,668 | 1.13x |
-| verify A*z | 67,343 | 878,318 | 13.04x |
-| verify sample c+NTT | 8,143 | 60,369 | 7.41x |
-| verify unpack hint | 1,880 | 1,982 | 1.05x |
-| verify c*b1/w1 | 32,231 | 275,488 | 8.55x |
-| verify hash compare | 39,608 | 39,910 | 1.01x |
+| keygen total | 159,128 | 986,945 | 6.20x |
+| keygen random/hash | 8,802 | 9,289 | 1.06x |
+| keygen A sampling/prepare | 49,662 | 53,866 | 1.08x |
+| keygen secret sampling | 3,397 | 7,624 | 2.24x |
+| keygen A*s1 | 65,956 | 877,696 | 13.31x |
+| keygen pack s1 | 994 | 1,748 | 1.76x |
+| keygen round s2 | 1,890 | 2,791 | 1.48x |
+| keygen pack b | 4,505 | 8,122 | 1.80x |
+| keygen hash/store | 22,747 | 22,968 | 1.01x |
+| sign total | 388,588 | 2,790,125 | 7.18x |
+| sign prepare A | 49,620 | 295,854 | 5.96x |
+| sign unpack+NTT secret | 38,659 | 356,688 | 9.23x |
+| sign hash mu/rhopp | 12,681 | 13,271 | 1.05x |
+| sign sample y | 32,711 | 95,023 | 2.90x |
+| sign NTT y x2 | 54,542 | 479,730 | 8.80x |
+| sign A*y | 79,930 | 793,263 | 9.92x |
+| sign w1/hash ctilde | 31,492 | 35,700 | 1.13x |
+| sign sample c+NTT | 16,111 | 120,442 | 7.48x |
+| sign c*s2/check w | 25,364 | 229,995 | 9.07x |
+| sign c*s1/check y | 16,210 | 152,567 | 9.41x |
+| sign c*b0/hint | 17,768 | 154,726 | 8.71x |
+| sign pack signature | 8,523 | 12,755 | 1.50x |
+| verify total | 198,564 | 1,338,997 | 6.74x |
+| verify unpack/check | 2,954 | 11,086 | 3.75x |
+| verify prepare A | 48,725 | 54,668 | 1.12x |
+| verify A*z | 64,983 | 878,318 | 13.52x |
+| verify sample c+NTT | 8,047 | 60,369 | 7.50x |
+| verify unpack hint | 1,549 | 1,982 | 1.28x |
+| verify c*b1/w1 | 31,841 | 275,488 | 8.65x |
+| verify hash compare | 39,358 | 39,910 | 1.01x |
 
 ### SIGN512
 
 | Kernel/stage | AVX2 median | REF median | Speedup |
 | --- | ---: | ---: | ---: |
-| keygen total | 405,384 | 2,762,108 | 6.81x |
-| keygen random/hash | 9,360 | 9,467 | 1.01x |
-| keygen A sampling/prepare | 123,190 | 123,651 | 1.00x |
-| keygen secret sampling | 7,213 | 14,997 | 2.08x |
-| keygen A*s1 | 197,528 | 2,531,426 | 12.82x |
-| keygen pack s1 | 2,585 | 4,335 | 1.68x |
-| keygen round s2 | 7,820 | 9,624 | 1.23x |
-| keygen pack b | 6,606 | 14,259 | 2.16x |
-| keygen hash/store | 48,531 | 48,721 | 1.00x |
-| sign total | 1,216,440 | 9,559,070 | 7.86x |
-| sign prepare A | 120,166 | 726,370 | 6.04x |
-| sign unpack+NTT secret | 97,376 | 910,223 | 9.35x |
-| sign hash mu/rhopp | 13,712 | 13,917 | 1.01x |
-| sign sample y | 128,534 | 343,137 | 2.67x |
-| sign NTT y x2 | 201,601 | 1,773,285 | 8.80x |
-| sign A*y | 342,633 | 3,944,737 | 11.51x |
-| sign w1/hash ctilde | 74,157 | 84,304 | 1.14x |
-| sign sample c+NTT | 35,719 | 192,186 | 5.38x |
-| sign c*s2/check w | 84,056 | 784,574 | 9.33x |
-| sign c*s1/check y | 41,018 | 398,895 | 9.72x |
-| sign c*b0/hint | 45,155 | 394,910 | 8.75x |
-| sign pack signature | 22,658 | 28,787 | 1.27x |
-| verify total | 486,038 | 3,546,821 | 7.30x |
-| verify unpack/check | 8,636 | 13,589 | 1.57x |
-| verify prepare A | 121,314 | 124,560 | 1.03x |
-| verify A*z | 184,679 | 2,557,195 | 13.85x |
-| verify sample c+NTT | 12,111 | 64,538 | 5.33x |
-| verify unpack hint | 4,058 | 4,104 | 1.01x |
-| verify c*b1/w1 | 81,103 | 700,204 | 8.63x |
-| verify hash compare | 71,534 | 71,616 | 1.00x |
+| keygen total | 394,692 | 2,762,108 | 7.00x |
+| keygen random/hash | 9,228 | 9,467 | 1.03x |
+| keygen A sampling/prepare | 124,761 | 123,651 | 0.99x |
+| keygen secret sampling | 7,051 | 14,997 | 2.13x |
+| keygen A*s1 | 185,244 | 2,531,426 | 13.67x |
+| keygen pack s1 | 2,815 | 4,335 | 1.54x |
+| keygen round s2 | 8,164 | 9,624 | 1.18x |
+| keygen pack b | 6,566 | 14,259 | 2.17x |
+| keygen hash/store | 48,398 | 48,721 | 1.01x |
+| sign total | 1,225,664 | 9,559,070 | 7.80x |
+| sign prepare A | 123,697 | 726,370 | 5.87x |
+| sign unpack+NTT secret | 96,803 | 910,223 | 9.40x |
+| sign hash mu/rhopp | 12,926 | 13,917 | 1.08x |
+| sign sample y | 131,118 | 343,137 | 2.62x |
+| sign NTT y x2 | 201,633 | 1,773,285 | 8.79x |
+| sign A*y | 357,933 | 3,944,737 | 11.02x |
+| sign w1/hash ctilde | 73,327 | 84,304 | 1.15x |
+| sign sample c+NTT | 35,425 | 192,186 | 5.43x |
+| sign c*s2/check w | 83,280 | 784,574 | 9.42x |
+| sign c*s1/check y | 40,398 | 398,895 | 9.87x |
+| sign c*b0/hint | 44,044 | 394,910 | 8.97x |
+| sign pack signature | 18,527 | 28,787 | 1.55x |
+| verify total | 477,119 | 3,546,821 | 7.43x |
+| verify unpack/check | 7,910 | 13,589 | 1.72x |
+| verify prepare A | 121,662 | 124,560 | 1.02x |
+| verify A*z | 179,149 | 2,557,195 | 14.27x |
+| verify sample c+NTT | 12,256 | 64,538 | 5.27x |
+| verify unpack hint | 3,055 | 4,104 | 1.34x |
+| verify c*b1/w1 | 79,678 | 700,204 | 8.79x |
+| verify hash compare | 70,745 | 71,616 | 1.01x |
 
 ## Keygen Matrix-Multiply Detail
 
@@ -254,22 +270,22 @@ uses AVX2 row-dot multiplication.
 
 | Security | Detail | AVX2 median | REF median | Speedup |
 | --- | --- | ---: | ---: | ---: |
-| SIGN128 | `A*s1.mul_invntt_x2` | 19,072 | 165,592 | 8.68x |
-| SIGN128 | `A*s1.mul_invntt_p1` | 8,608 | 77,612 | 9.02x |
-| SIGN128 | `A*s1.mul_invntt_p2` | 8,498 | 77,504 | 9.12x |
-| SIGN128 | `A*s1.crt` | 1,837 | 10,298 | 5.61x |
-| SIGN256 | `A*s1.mul_invntt_x2` | 40,882 | 394,387 | 9.65x |
-| SIGN256 | `A*s1.mul_invntt_p1` | 18,698 | 186,421 | 9.97x |
-| SIGN256 | `A*s1.mul_invntt_p2` | 18,345 | 186,466 | 10.16x |
-| SIGN256 | `A*s1.crt` | 3,683 | 21,102 | 5.73x |
-| SIGN512 | `A*s1.mul_invntt_x2` | 127,590 | 1,331,954 | 10.44x |
-| SIGN512 | `A*s1.mul_invntt_p1` | 58,386 | 620,427 | 10.63x |
-| SIGN512 | `A*s1.mul_invntt_p2` | 59,337 | 623,757 | 10.51x |
-| SIGN512 | `A*s1.crt` | 9,731 | 66,286 | 6.81x |
+| SIGN128 | `A*s1.mul_invntt_x2` | 17,686 | 165,592 | 9.36x |
+| SIGN128 | `A*s1.mul_invntt_p1` | 7,980 | 77,612 | 9.73x |
+| SIGN128 | `A*s1.mul_invntt_p2` | 7,830 | 77,504 | 9.90x |
+| SIGN128 | `A*s1.crt` | 1,742 | 10,298 | 5.91x |
+| SIGN256 | `A*s1.mul_invntt_x2` | 38,444 | 394,387 | 10.26x |
+| SIGN256 | `A*s1.mul_invntt_p1` | 17,468 | 186,421 | 10.67x |
+| SIGN256 | `A*s1.mul_invntt_p2` | 17,362 | 186,466 | 10.74x |
+| SIGN256 | `A*s1.crt` | 3,500 | 21,102 | 6.03x |
+| SIGN512 | `A*s1.mul_invntt_x2` | 116,135 | 1,331,954 | 11.47x |
+| SIGN512 | `A*s1.mul_invntt_p1` | 53,925 | 620,427 | 11.51x |
+| SIGN512 | `A*s1.mul_invntt_p2` | 53,067 | 623,757 | 11.75x |
+| SIGN512 | `A*s1.crt` | 9,012 | 66,286 | 7.36x |
 
 ## Takeaways
 
-- Whole-operation speedup is 5.55x to 7.34x in `test_speed_SIGN`.
+- Whole-operation speedup is 5.69x to 7.81x in `test_speed_SIGN`.
 - The main computational speedups are in NTT-domain operations and matrix-vector
   multiplication: `A*s1`, `A*y`, `A*z`, `c*s*`, and `c*b*`.
 - Hash-only stages such as `random_hash`, `hash_store`, and `hash_compare`
