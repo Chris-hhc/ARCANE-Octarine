@@ -150,6 +150,17 @@ Dilithium `avx2/test/test_speed5`.
 | SIGN256 vs Dilithium5 | sign | **380,788** | 441,321 | ARCANE Octarine, 1.16x |
 | SIGN256 vs Dilithium5 | verify | **197,319** | 238,195 | ARCANE Octarine, 1.21x |
 
+Reference implementation comparison:
+
+| Comparison | Stage | ARCANE Octarine REF median | Dilithium REF median | Faster |
+| --- | --- | ---: | ---: | --- |
+| SIGN128 vs Dilithium2 | keygen/keypair | 453,634 | **257,243** | Dilithium, 1.76x |
+| SIGN128 vs Dilithium2 | sign | 1,365,431 | **948,244** | Dilithium, 1.44x |
+| SIGN128 vs Dilithium2 | verify | 642,722 | **276,792** | Dilithium, 2.32x |
+| SIGN256 vs Dilithium5 | keygen/keypair | 946,967 | **694,840** | Dilithium, 1.36x |
+| SIGN256 vs Dilithium5 | sign | 2,670,530 | **1,917,170** | Dilithium, 1.39x |
+| SIGN256 vs Dilithium5 | verify | 1,282,368 | **722,102** | Dilithium, 1.78x |
+
 ## Kernel Breakdown
 
 These numbers come from `test/test_breakdown_SIGN.c`. Some stage names differ
