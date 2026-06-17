@@ -189,7 +189,7 @@ int sig_keygen_test(
 
   // Generate s with coefficients in [-2, 1]
   ts = cpucycles();
-  ring_uniform(&s1, RRLWR_SIGN_LOG_ETA+1, rhoprime, RRLWR_SIGN_RHOPRIME_LEN);
+  ring_uniform_secret(&s1, RRLWR_SIGN_LOG_ETA+1, rhoprime, RRLWR_SIGN_RHOPRIME_LEN);
   sign_test_add_cycles(SIGN_TEST_KEYGEN_S_UNIFORM, ts);
 
   // Compute A*s1
@@ -327,7 +327,7 @@ int sig_sign_test(
   unsigned char *tr_message = (unsigned char *)malloc(RRLWR_SIGN_TR_LEN + m_len_bytes);
   unsigned char *tr = tr_message;
   unsigned char *message = tr + RRLWR_SIGN_TR_LEN;
-  unsigned char rhopp[RRLWR_SIGN_RHOPRIMEPRIME_LEN];
+  unsigned char rhopp[RRLWR_SIGN_RHOPRIMEPRIME_LEN+1];
   unsigned char ctilde[RRLWR_SIGN_CTILDE_LEN];
   poly c, t0;
   ring_element s1, s2, b0, y, w;
@@ -385,8 +385,9 @@ reject:
 
   // Sample y and transform to NTT domain
   ts = cpucycles();
-  ring_uniform_from_nonce(&y, RRLWR_SIGN_LOG_GAMMA1+1, rhopp, RRLWR_SIGN_RHOPRIMEPRIME_LEN, kappa);
-  kappa += 4;
+  rhopp[RRLWR_SIGN_RHOPRIMEPRIME_LEN] = kappa;
+  ring_uniform_secret_x4(&y, RRLWR_SIGN_LOG_GAMMA1+1, rhopp, RRLWR_SIGN_RHOPRIMEPRIME_LEN+1);
+  kappa += RRLWR_K;
   sign_test_add_cycles(SIGN_TEST_SIGN_SAMPLE_Y, ts);
 
   ts = cpucycles();

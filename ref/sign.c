@@ -76,10 +76,10 @@ int sig_keygen(
   RRLWR_SIGN_HASH_H(rho_rhoprime_K, RRLWR_SIGN_RHO_LEN + RRLWR_SIGN_RHOPRIME_LEN + RRLWR_SIGN_K_LEN, xi_k, RRLWR_SIGN_XI_LEN+1);
 
   // Generate a with coefficients in [-q/2+1, q/2]
-  ring_uniform(&a, RRLWR_SIGN_LOGQ, rho, RRLWR_SIGN_RHO_LEN);
+  ring_uniform_public_x4(&a, RRLWR_SIGN_LOGQ, rho, RRLWR_SIGN_RHO_LEN);
 
   // Generate s with coefficients in [-2, 1]
-  ring_uniform(&s1, RRLWR_SIGN_LOG_ETA+1, rhoprime, RRLWR_SIGN_RHOPRIME_LEN);
+  ring_uniform_secret(&s1, RRLWR_SIGN_LOG_ETA+1, rhoprime, RRLWR_SIGN_RHOPRIME_LEN);
 
   // Compute A*s1
   ring_mul32x2(&t, &a, &s1);
@@ -160,7 +160,7 @@ int sig_sign(
   unsigned char *tr_message = (unsigned char *)malloc(RRLWR_SIGN_TR_LEN + m_len_bytes);
   unsigned char *tr = tr_message;
   unsigned char *message = tr + RRLWR_SIGN_TR_LEN;
-  unsigned char rhopp[RRLWR_SIGN_RHOPRIMEPRIME_LEN];
+  unsigned char rhopp[RRLWR_SIGN_RHOPRIMEPRIME_LEN+1];
   unsigned char ctilde[RRLWR_SIGN_CTILDE_LEN];
   poly c, t0;
   ring_element s1, s2, b0, y, w;
@@ -177,7 +177,7 @@ int sig_sign(
   skDecode(rho, K, tr, sk);
 
   // Retrieve secret and public values and convert to NTT domains
-  ring_uniform(t, RRLWR_SIGN_LOGQ, rho, RRLWR_SIGN_RHO_LEN);
+  ring_uniform_public_x4(t, RRLWR_SIGN_LOGQ, rho, RRLWR_SIGN_RHO_LEN);
   ring_ntt32x2(&ax2, t);
   ring_unpack(&s1, &sk[RRLWR_SIGN_RHO_LEN + RRLWR_SIGN_K_LEN + RRLWR_SIGN_TR_LEN], RRLWR_SIGN_LOG_ETA+1); // s1
   ring_ntt32(&s1, RRLWR_SIGN_PRIME1, RRLWR_SIGN_PRIME1INV, rrlwr_sign_zetas1);
@@ -206,8 +206,9 @@ reject:
   #endif
 
   // Sample y and transform to NTT domain
-  ring_uniform_from_nonce(&y, RRLWR_SIGN_LOG_GAMMA1+1, rhopp, RRLWR_SIGN_RHOPRIMEPRIME_LEN, kappa);
-  kappa += 4;
+  rhopp[RRLWR_SIGN_RHOPRIMEPRIME_LEN] = kappa;
+  ring_uniform_secret_x4(&y, RRLWR_SIGN_LOG_GAMMA1+1, rhopp, RRLWR_SIGN_RHOPRIMEPRIME_LEN+1);
+  kappa += RRLWR_K;
   ring_ntt32x2(&yx2, &y);
 
   // Compute w = A*y assuming A and y already in NTT domain
@@ -356,7 +357,7 @@ int sig_verify(
   }
 
   // Generate the matrix a
-  ring_uniform(&a, RRLWR_SIGN_LOGQ, rho, RRLWR_SIGN_RHO_LEN);
+  ring_uniform_public_x4(&a, RRLWR_SIGN_LOGQ, rho, RRLWR_SIGN_RHO_LEN);
 
   // Compute a*z
   ring_mul32x2(&w, &a, &z);

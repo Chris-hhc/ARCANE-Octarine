@@ -79,7 +79,7 @@ int sig_keygen(
   ring_uniform_Awinx2(&ax2, RRLWR_SIGN_LOGQ, rho, RRLWR_SIGN_RHO_LEN);
 
   // Generate s with coefficients in [-2, 1]
-  ring_uniform(&s1, RRLWR_SIGN_LOG_ETA+1, rhoprime, RRLWR_SIGN_RHOPRIME_LEN);
+  ring_uniform_secret(&s1, RRLWR_SIGN_LOG_ETA+1, rhoprime, RRLWR_SIGN_RHOPRIME_LEN);
 
   // Compute A*s1
   ring_mul_Awin32x2(&t, &ax2, &s1);
@@ -160,7 +160,7 @@ int sig_sign(
   unsigned char *tr_message = (unsigned char *)malloc(RRLWR_SIGN_TR_LEN + m_len_bytes);
   unsigned char *tr = tr_message;
   unsigned char *message = tr + RRLWR_SIGN_TR_LEN;
-  unsigned char rhopp[RRLWR_SIGN_RHOPRIMEPRIME_LEN];
+  unsigned char rhopp[RRLWR_SIGN_RHOPRIMEPRIME_LEN+1];
   unsigned char ctilde[RRLWR_SIGN_CTILDE_LEN];
   poly c, t0;
   ring_element s1, s2, b0, y, w;
@@ -205,8 +205,9 @@ reject:
   #endif
 
   // Sample y and transform to NTT domain
-  ring_uniform_from_nonce(&y, RRLWR_SIGN_LOG_GAMMA1+1, rhopp, RRLWR_SIGN_RHOPRIMEPRIME_LEN, kappa);
-  kappa += 4;
+  rhopp[RRLWR_SIGN_RHOPRIMEPRIME_LEN] = kappa;
+  ring_uniform_secret_x4(&y, RRLWR_SIGN_LOG_GAMMA1+1, rhopp, RRLWR_SIGN_RHOPRIMEPRIME_LEN+1);
+  kappa += RRLWR_K;
   ring_ntt32x2(&yx2, &y);
 
   // Compute w = A*y assuming A and y already in NTT domain

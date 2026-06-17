@@ -121,12 +121,15 @@ extern "C"
 
   #define GENERATE_RANDOM_BYTES(output, output_len, ctx) \
           get_random_number(ctx, output, 8*(output_len))
-  #define RRLWR_XOF(output, output_len, input, input_len) \
+
+  #define RRLWR_XOF_SECRET(output, output_len, input, input_len) \
           shake256((uint8_t *)(output), (output_len), (const uint8_t *)(input), (input_len))
+  #define RRLWR_XOF_PUBLIC(output, output_len, input, input_len) \
+          shake128((uint8_t *)(output), (output_len), (const uint8_t *)(input), (input_len))
   #define RRLWR_SIGN_HASH_H(output, output_len, input, input_len) \
           shake256((uint8_t *)(output), (output_len), (const uint8_t *)(input), (input_len))
   #define RRLWR_SIGN_HASH_SAMPLE_C(output, input, input_len) \
-          sha3_512((uint8_t *)(output), (const uint8_t *)(input), (input_len))
+          shake256((uint8_t *)(output), RRLWR_SIGN_SAMPLE_C_LEN, (const uint8_t *)(input), (input_len))
 
   // The choice of prime for the arithmetic does not affect the algorithm, only the implementation.
   #define RRLWR_SIGN_PRIME1             (0x3fff7801)

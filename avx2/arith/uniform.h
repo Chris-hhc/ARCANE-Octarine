@@ -28,9 +28,9 @@ extern "C"
 {
 #endif
 
-  void poly_uniform(poly *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len, unsigned char coeff);
-  void ring_uniform(ring_element *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len);
-  void ring_uniform_from_nonce(ring_element *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len, unsigned int nonce);
+  void ring_uniform_public_x4(ring_element *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len);
+  void ring_uniform_secret_x4(ring_element *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len);
+  void ring_uniform_secret(ring_element *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len);
   void ring_uniform_Awin_base(ring_element_Awin *aw, int32_t bitlen, const unsigned char *seed, int32_t seed_len);
 
 #ifdef __cplusplus

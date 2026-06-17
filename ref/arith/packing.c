@@ -17,7 +17,7 @@
 #include "packing.h"
 
 #define POLY_PACK_CASE(BITS) case BITS: poly_pack##BITS(b, r); break
-#define POLY_UNPACK_CASE(BITS) case BITS: poly_unpack##BITS(r, b); break
+#define SUBPOLY_UNPACK_CASE(BITS, ncoeffs) case BITS: subpoly_unpack##BITS(r, ncoeffs, b); break
 
 static inline uint32_t pack_coeff(int32_t c, unsigned int bitlen) {
   return (((uint32_t)1 << (bitlen-1))-1u-(uint32_t)c) & (((uint32_t)1 << bitlen)-1u);
@@ -86,25 +86,6 @@ static void poly_pack_bits(unsigned char *b, const poly *r, unsigned int bitlen)
   }
 }
 
-static void poly_unpack_bits(poly *r, const unsigned char *b, unsigned int bitlen) {
-  int32_t *restrict rc = r->coeffs;
-  const uint32_t mask = ((uint32_t)1 << bitlen)-1u;
-  const uint32_t offset = ((uint32_t)1 << (bitlen-1))-1u;
-  uint64_t acc = 0;
-  unsigned int acc_shift = 0;
-  unsigned int bpos = 0;
-
-  for(unsigned int i = 0; i < RRLWR_N; i++) {
-    while(acc_shift < bitlen) {
-      acc |= (uint64_t)b[bpos++] << acc_shift;
-      acc_shift += 8;
-    }
-    rc[i] = (int32_t)(offset-(uint32_t)(acc & mask));
-    acc >>= bitlen;
-    acc_shift -= bitlen;
-  }
-}
-
 #define DEFINE_POLY_PACK_CONST(BITS) \
 static void poly_pack##BITS(unsigned char *b, const poly *r) { \
   const int32_t *restrict rc = r->coeffs; \
@@ -156,10 +137,10 @@ static void poly_pack2(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack2(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack2(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 4, j++) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 4, j++) {
     uint32_t x = b[j];
     rc[i+0] = unpack_coeff((x >> 0) & 0x03u, 2);
     rc[i+1] = unpack_coeff((x >> 2) & 0x03u, 2);
@@ -186,10 +167,10 @@ static void poly_pack3(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack3(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack3(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 8, j += 3) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 8, j += 3) {
     uint32_t x = (uint32_t)b[j+0] | ((uint32_t)b[j+1] << 8) | ((uint32_t)b[j+2] << 16);
     rc[i+0] = unpack_coeff((x >> 0) & 0x07u, 3);
     rc[i+1] = unpack_coeff((x >> 3) & 0x07u, 3);
@@ -222,10 +203,10 @@ static void poly_pack5(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack5(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack5(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 8, j += 5) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 8, j += 5) {
     uint64_t x = (uint64_t)b[j+0] | ((uint64_t)b[j+1] << 8) | ((uint64_t)b[j+2] << 16)
                | ((uint64_t)b[j+3] << 24) | ((uint64_t)b[j+4] << 32);
     rc[i+0] = unpack_coeff((uint32_t)(x >> 0) & 0x1fu, 5);
@@ -253,10 +234,10 @@ static void poly_pack6(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack6(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack6(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 4, j += 3) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 4, j += 3) {
     uint32_t x = (uint32_t)b[j+0] | ((uint32_t)b[j+1] << 8) | ((uint32_t)b[j+2] << 16);
     rc[i+0] = unpack_coeff((x >> 0) & 0x3fu, 6);
     rc[i+1] = unpack_coeff((x >> 6) & 0x3fu, 6);
@@ -273,10 +254,10 @@ static void poly_pack8(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack8(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack8(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0; i < RRLWR_N; i++) {
+  for(unsigned int i = 0; i < ncoeffs; i++) {
     rc[i] = unpack_coeff(b[i], 8);
   }
 }
@@ -300,10 +281,10 @@ static void poly_pack9(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack9(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack9(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 8, j += 9) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 8, j += 9) {
     uint64_t lo = load64le(b+j);
     uint32_t hi = b[j+8];
     rc[i+0] = unpack_coeff((uint32_t)(lo >> 0) & 0x1ffu, 9);
@@ -333,10 +314,10 @@ static void poly_pack10(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack10(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack10(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 4, j += 5) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 4, j += 5) {
     uint64_t x = (uint64_t)b[j+0] | ((uint64_t)b[j+1] << 8) | ((uint64_t)b[j+2] << 16)
                | ((uint64_t)b[j+3] << 24) | ((uint64_t)b[j+4] << 32);
     rc[i+0] = unpack_coeff((uint32_t)(x >> 0) & 0x3ffu, 10);
@@ -366,10 +347,10 @@ static void poly_pack11(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack11(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack11(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 8, j += 11) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 8, j += 11) {
     uint64_t lo = load64le(b+j);
     uint32_t hi = load24le(b+j+8);
     rc[i+0] = unpack_coeff((uint32_t)(lo >> 0) & 0x7ffu, 11);
@@ -403,10 +384,10 @@ static void poly_pack13(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack13(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack13(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 8, j += 13) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 8, j += 13) {
     uint64_t lo = load64le(b+j);
     uint64_t hi = load40le(b+j+8);
     rc[i+0] = unpack_coeff((uint32_t)(lo >> 0) & 0x1fffu, 13);
@@ -438,10 +419,10 @@ static void poly_pack14(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack14(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack14(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 4, j += 7) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 4, j += 7) {
     uint64_t x = (uint64_t)b[j+0] | ((uint64_t)b[j+1] << 8) | ((uint64_t)b[j+2] << 16)
                | ((uint64_t)b[j+3] << 24) | ((uint64_t)b[j+4] << 32) | ((uint64_t)b[j+5] << 40)
                | ((uint64_t)b[j+6] << 48);
@@ -473,10 +454,10 @@ static void poly_pack19(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack19(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack19(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 8, j += 19) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 8, j += 19) {
     uint64_t lo = load64le(b+j);
     uint64_t mid = load64le(b+j+8);
     uint32_t hi = load24le(b+j+16);
@@ -505,10 +486,10 @@ static void poly_pack20(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack20(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack20(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 2, j += 5) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 2, j += 5) {
     uint64_t x = (uint64_t)b[j+0] | ((uint64_t)b[j+1] << 8) | ((uint64_t)b[j+2] << 16)
                | ((uint64_t)b[j+3] << 24) | ((uint64_t)b[j+4] << 32);
     rc[i+0] = unpack_coeff((uint32_t)(x >> 0) & 0xfffffu, 20);
@@ -531,10 +512,10 @@ static void poly_pack22(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack22(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack22(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i += 4, j += 11) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i += 4, j += 11) {
     uint64_t lo = load64le(b+j);
     uint32_t hi = load24le(b+j+8);
     rc[i+0] = unpack_coeff((uint32_t)(lo >> 0) & 0x3fffffu, 22);
@@ -555,10 +536,10 @@ static void poly_pack24(unsigned char *b, const poly *r) {
   }
 }
 
-static void poly_unpack24(poly *r, const unsigned char *b) {
-  int32_t *restrict rc = r->coeffs;
+static void subpoly_unpack24(int32_t *r, unsigned int ncoeffs, const unsigned char *b) {
+  int32_t *restrict rc = r;
 
-  for(unsigned int i = 0, j = 0; i < RRLWR_N; i++, j += 3) {
+  for(unsigned int i = 0, j = 0; i < ncoeffs; i++, j += 3) {
     uint32_t x = (uint32_t)b[j+0] | ((uint32_t)b[j+1] << 8) | ((uint32_t)b[j+2] << 16);
     rc[i] = 0x7fffff-(int32_t)x;
   }
@@ -592,25 +573,50 @@ void ring_pack(unsigned char *b, ring_element *r, int32_t bitlen) {
   }
 }
 
+/// @brief Unpack ncoeffs coefficients into r. ncoeffs must be divisible by 32
+static void subpoly_unpack_bits(int32_t *r, unsigned int ncoeffs, const unsigned char *b, unsigned int bitlen) {
+  int32_t *restrict rc = r;
+  const uint32_t mask = ((uint32_t)1 << bitlen)-1u;
+  const uint32_t offset = ((uint32_t)1 << (bitlen-1))-1u;
+  uint64_t acc = 0;
+  unsigned int acc_shift = 0;
+  unsigned int bpos = 0;
+
+  for(unsigned int i = 0; i < ncoeffs; i++) {
+    while(acc_shift < bitlen) {
+      acc |= (uint64_t)b[bpos++] << acc_shift;
+      acc_shift += 8;
+    }
+    rc[i] = (int32_t)(offset-(uint32_t)(acc & mask));
+    acc >>= bitlen;
+    acc_shift -= bitlen;
+  }
+}
+
+/// @brief Unpack ncoeffs coefficients into r. ncoeffs must be divisible by 32
+void subpoly_unpack(int32_t *r, unsigned int ncoeffs, const unsigned char *b, unsigned int bitlen) {
+  switch(bitlen) {
+    SUBPOLY_UNPACK_CASE(2, ncoeffs);
+    SUBPOLY_UNPACK_CASE(3, ncoeffs);
+    SUBPOLY_UNPACK_CASE(5, ncoeffs);
+    SUBPOLY_UNPACK_CASE(6, ncoeffs);
+    SUBPOLY_UNPACK_CASE(8, ncoeffs);
+    SUBPOLY_UNPACK_CASE(9, ncoeffs);
+    SUBPOLY_UNPACK_CASE(10, ncoeffs);
+    SUBPOLY_UNPACK_CASE(11, ncoeffs);
+    SUBPOLY_UNPACK_CASE(13, ncoeffs);
+    SUBPOLY_UNPACK_CASE(14, ncoeffs);
+    SUBPOLY_UNPACK_CASE(19, ncoeffs);
+    SUBPOLY_UNPACK_CASE(20, ncoeffs);
+    SUBPOLY_UNPACK_CASE(22, ncoeffs);
+    SUBPOLY_UNPACK_CASE(24, ncoeffs);
+    default: subpoly_unpack_bits(r, ncoeffs, b, (unsigned int)bitlen); break;
+  }
+}
+
 /// @brief Unpack a polynomial with coefficients in [-bitlen/2, bitlen/2-1] from a byte string of bitlen bits per coefficient
 void poly_unpack(poly *r, const unsigned char *b, int32_t bitlen) {
-  switch(bitlen) {
-    POLY_UNPACK_CASE(2);
-    POLY_UNPACK_CASE(3);
-    POLY_UNPACK_CASE(5);
-    POLY_UNPACK_CASE(6);
-    POLY_UNPACK_CASE(8);
-    POLY_UNPACK_CASE(9);
-    POLY_UNPACK_CASE(10);
-    POLY_UNPACK_CASE(11);
-    POLY_UNPACK_CASE(13);
-    POLY_UNPACK_CASE(14);
-    POLY_UNPACK_CASE(19);
-    POLY_UNPACK_CASE(20);
-    POLY_UNPACK_CASE(22);
-    POLY_UNPACK_CASE(24);
-    default: poly_unpack_bits(r, b, (unsigned int)bitlen); break;
-  }
+  subpoly_unpack(r->coeffs, RRLWR_N, b, bitlen);
 }
 
 void ring_unpack(ring_element *r, const unsigned char *b, int32_t bitlen) {

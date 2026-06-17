@@ -290,7 +290,7 @@ static int test_uniform() {
     // Generate random ring elements mod q = 2^d
     q = (int32_t)1 << d;
     get_random_number(&drng_algorithm, seed, 8*seed_len);
-    ring_uniform(&r, d, seed, seed_len);
+    ring_uniform_secret(&r, d, seed, seed_len);
 
     // Check that the output is in the right range
     for(unsigned int j = 0; j < RRLWR_K; j++) {
@@ -314,7 +314,7 @@ static int test_w1() {
 
   q = (int32_t)1 << (RRLWR_SIGN_LOGQ - (RRLWR_SIGN_LOG_GAMMA2+1));
   get_random_number(&drng_algorithm, seed, 8*seed_len);
-  ring_uniform(&r, RRLWR_SIGN_LOGQ, seed, seed_len);
+  ring_uniform_secret(&r, RRLWR_SIGN_LOGQ, seed, seed_len);
   ring_w1(w1, &r);
   ring_unpack(&w, w1, RRLWR_SIGN_LOGQ-(RRLWR_SIGN_LOG_GAMMA2+1));
 
@@ -343,7 +343,7 @@ static int test_power2round() {
   unsigned char seed[64];
 
   get_random_number(&drng_algorithm, seed, 8*seed_len);
-  ring_uniform(&r, RRLWR_SIGN_LOGP, seed, seed_len);
+  ring_uniform_secret(&r, RRLWR_SIGN_LOGP, seed, seed_len);
 
   // Check that the output is in the right range
   for(unsigned int j = 0; j < RRLWR_K; j++) {

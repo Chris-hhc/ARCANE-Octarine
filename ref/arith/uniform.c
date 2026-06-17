@@ -23,83 +23,127 @@
 /// @brief Generate a polynomial with coefficients pseudo-randomly generated in the uniform distribution [-bitlen/2, bitlen/2-1]
 ///        The seed (of length seed_len) is appended with coeff that is used as ring coefficient index.
 #define RRLWR_MAX_SAMPLING_BITLEN (24)  // Support sampling bit lengths up to 24 bits, only required to define buffer size
-#define RRLWR_MAX_SEED_LEN        (128) // Support seed lengths up to 128 bytes, only required to define buffer size
-#define RRLWR_MAX_OUTLEN          ((RRLWR_MAX_SAMPLING_BITLEN * RRLWR_N * RRLWR_K / 4) / 8)
-#define RRLWR_XOF_BUFLEN          (((RRLWR_MAX_OUTLEN + SHAKE128_RATE - 1) / SHAKE128_RATE) * SHAKE128_RATE)
+#define RRLWR_MAX_SEED_LEN        (129) // Support seed lengths up to 128 bytes, only required to define buffer size
 
-static void set_seed_nonce(unsigned char *out,
-                           const unsigned char *seed,
-                           int32_t seed_len,
-                           unsigned char nonce)
+// Uniform polynomial generation with 4 independent byte streams
+static void poly_uniform_public_x4(poly *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len, unsigned char coeff)
 {
-  memcpy(out, seed, (size_t)seed_len);
-  out[seed_len] = nonce;
-}
+  unsigned char xof_bytes_buffer0[RRLWR_MAX_SAMPLING_BITLEN*(RRLWR_N >> 3)]; // Allocate maximum length
+  unsigned char xof_bytes_buffer1[RRLWR_MAX_SAMPLING_BITLEN*(RRLWR_N >> 3)]; // Allocate maximum length
+  unsigned char xof_bytes_buffer2[RRLWR_MAX_SAMPLING_BITLEN*(RRLWR_N >> 3)]; // Allocate maximum length
+  unsigned char xof_bytes_buffer3[RRLWR_MAX_SAMPLING_BITLEN*(RRLWR_N >> 3)]; // Allocate maximum length
+  unsigned char seed_buffer0[RRLWR_MAX_SEED_LEN+2];                          // Allocate maximum length
+  unsigned char seed_buffer1[RRLWR_MAX_SEED_LEN+2];                          // Allocate maximum length
+  unsigned char seed_buffer2[RRLWR_MAX_SEED_LEN+2];                          // Allocate maximum length
+  unsigned char seed_buffer3[RRLWR_MAX_SEED_LEN+2];                          // Allocate maximum length
 
-static void squeeze_seed_nonce(unsigned char *out,
-                               size_t nblocks,
-                               const unsigned char *seed,
-                               int32_t seed_len,
-                               unsigned char nonce)
-{
-  unsigned char seed_buffer[RRLWR_MAX_SEED_LEN + 1];
-  keccak_state state;
-
-  set_seed_nonce(seed_buffer, seed, seed_len, nonce);
-  shake128_absorb_once(&state, seed_buffer, (size_t)seed_len + 1);
-  shake128_squeezeblocks(out, nblocks, &state);
-}
-
-static void poly_uniform_kx(poly **r,
-                            unsigned int npolys,
-                            int32_t bitlen,
-                            const unsigned char *seed,
-                            int32_t seed_len,
-                            unsigned char nonce0,
-                            unsigned char nonce1,
-                            unsigned char nonce2,
-                            unsigned char nonce3)
-{
-  size_t outlen = (size_t)bitlen * (RRLWR_N >> 3);
-  size_t nblocks = (((outlen >> 2) * npolys) + SHAKE128_RATE - 1) / SHAKE128_RATE;
-  size_t lane_len = nblocks * SHAKE128_RATE;
-  unsigned char buf[4 * RRLWR_XOF_BUFLEN];
-
-  squeeze_seed_nonce(buf + 0 * lane_len, nblocks, seed, seed_len, nonce0);
-  squeeze_seed_nonce(buf + 1 * lane_len, nblocks, seed, seed_len, nonce1);
-  squeeze_seed_nonce(buf + 2 * lane_len, nblocks, seed, seed_len, nonce2);
-  squeeze_seed_nonce(buf + 3 * lane_len, nblocks, seed, seed_len, nonce3);
-
-  for(unsigned int i = 0; i < npolys; i++) {
-    poly_unpack(r[i], buf + i * outlen, bitlen);
+  // Concatenate the seed with the ring element index i
+  for(int32_t i = 0; i < seed_len; i++) {
+    seed_buffer0[i] = seed[i];
+    seed_buffer1[i] = seed[i];
+    seed_buffer2[i] = seed[i];
+    seed_buffer3[i] = seed[i];
   }
-}
+  seed_buffer0[seed_len] = coeff;
+  seed_buffer1[seed_len] = coeff;
+  seed_buffer2[seed_len] = coeff;
+  seed_buffer3[seed_len] = coeff;
+  seed_buffer0[seed_len+1] = 0;
+  seed_buffer1[seed_len+1] = 1;
+  seed_buffer2[seed_len+1] = 2;
+  seed_buffer3[seed_len+1] = 3;
 
-void poly_uniform(poly *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len, unsigned char coeff) {
-  poly *polys[1] = {r};
+  // Generate the output byte stream
+  RRLWR_XOF_PUBLIC(xof_bytes_buffer0, bitlen*(RRLWR_N >> 5), seed_buffer0, seed_len+2);
+  RRLWR_XOF_PUBLIC(xof_bytes_buffer1, bitlen*(RRLWR_N >> 5), seed_buffer1, seed_len+2);
+  RRLWR_XOF_PUBLIC(xof_bytes_buffer2, bitlen*(RRLWR_N >> 5), seed_buffer2, seed_len+2);
+  RRLWR_XOF_PUBLIC(xof_bytes_buffer3, bitlen*(RRLWR_N >> 5), seed_buffer3, seed_len+2);
 
-  poly_uniform_kx(polys, 1, bitlen, seed, seed_len,
-                  (unsigned char)(4 * coeff),
-                  (unsigned char)(4 * coeff + 1),
-                  (unsigned char)(4 * coeff + 2),
-                  (unsigned char)(4 * coeff + 3));
-}
-
-void ring_uniform_from_nonce(ring_element *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len, unsigned int nonce) {
-  poly *polys[RRLWR_K];
-
-  for(unsigned int i = 0; i < RRLWR_K; i++) {
-    polys[i] = &r->x[i];
-  }
-
-  poly_uniform_kx(polys, RRLWR_K, bitlen, seed, seed_len,
-                  (unsigned char)(nonce + 0),
-                  (unsigned char)(nonce + 1),
-                  (unsigned char)(nonce + 2),
-                  (unsigned char)(nonce + 3));
+  // Unpack into polynomial coefficients
+  subpoly_unpack(&r->coeffs[0*(RRLWR_N>>2)], RRLWR_N>>2, xof_bytes_buffer0, bitlen);
+  subpoly_unpack(&r->coeffs[1*(RRLWR_N>>2)], RRLWR_N>>2, xof_bytes_buffer1, bitlen);
+  subpoly_unpack(&r->coeffs[2*(RRLWR_N>>2)], RRLWR_N>>2, xof_bytes_buffer2, bitlen);
+  subpoly_unpack(&r->coeffs[3*(RRLWR_N>>2)], RRLWR_N>>2, xof_bytes_buffer3, bitlen);
 }
 
 /// @brief Generate a ring element with coefficients pseudo-randomly generated in the uniform distribution [-bitlen/2, bitlen/2-1]
-void ring_uniform(ring_element *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len) {
-  ring_uniform_from_nonce(r, bitlen, seed, seed_len, 0);
+void ring_uniform_public_x4(ring_element *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len) {
+  for(unsigned char i = 0; i < RRLWR_K; i++) {
+    poly_uniform_public_x4(&r->x[i], bitlen, seed, seed_len, i);
+  }
+}
+
+// Uniform polynomial generation with 4 independent byte streams
+static void poly_uniform_secret_x4(poly *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len, unsigned char coeff)
+{
+  unsigned char xof_bytes_buffer0[RRLWR_MAX_SAMPLING_BITLEN*(RRLWR_N >> 5)]; // Allocate maximum length
+  unsigned char xof_bytes_buffer1[RRLWR_MAX_SAMPLING_BITLEN*(RRLWR_N >> 5)]; // Allocate maximum length
+  unsigned char xof_bytes_buffer2[RRLWR_MAX_SAMPLING_BITLEN*(RRLWR_N >> 5)]; // Allocate maximum length
+  unsigned char xof_bytes_buffer3[RRLWR_MAX_SAMPLING_BITLEN*(RRLWR_N >> 5)]; // Allocate maximum length
+  unsigned char seed_buffer0[RRLWR_MAX_SEED_LEN+2];                          // Allocate maximum length
+  unsigned char seed_buffer1[RRLWR_MAX_SEED_LEN+2];                          // Allocate maximum length
+  unsigned char seed_buffer2[RRLWR_MAX_SEED_LEN+2];                          // Allocate maximum length
+  unsigned char seed_buffer3[RRLWR_MAX_SEED_LEN+2];                          // Allocate maximum length
+
+  // Concatenate the seed with the ring element index i
+  for(int32_t i = 0; i < seed_len; i++) {
+    seed_buffer0[i] = seed[i];
+    seed_buffer1[i] = seed[i];
+    seed_buffer2[i] = seed[i];
+    seed_buffer3[i] = seed[i];
+  }
+  seed_buffer0[seed_len] = coeff;
+  seed_buffer1[seed_len] = coeff;
+  seed_buffer2[seed_len] = coeff;
+  seed_buffer3[seed_len] = coeff;
+  seed_buffer0[seed_len+1] = 0;
+  seed_buffer1[seed_len+1] = 1;
+  seed_buffer2[seed_len+1] = 2;
+  seed_buffer3[seed_len+1] = 3;
+
+  // Generate the output byte stream
+  RRLWR_XOF_SECRET(xof_bytes_buffer0, bitlen*(RRLWR_N >> 5), seed_buffer0, seed_len+2);
+  RRLWR_XOF_SECRET(xof_bytes_buffer1, bitlen*(RRLWR_N >> 5), seed_buffer1, seed_len+2);
+  RRLWR_XOF_SECRET(xof_bytes_buffer2, bitlen*(RRLWR_N >> 5), seed_buffer2, seed_len+2);
+  RRLWR_XOF_SECRET(xof_bytes_buffer3, bitlen*(RRLWR_N >> 5), seed_buffer3, seed_len+2);
+
+  // Unpack into polynomial coefficients
+  subpoly_unpack(&r->coeffs[0*(RRLWR_N>>2)], RRLWR_N>>2, xof_bytes_buffer0, bitlen);
+  subpoly_unpack(&r->coeffs[1*(RRLWR_N>>2)], RRLWR_N>>2, xof_bytes_buffer1, bitlen);
+  subpoly_unpack(&r->coeffs[2*(RRLWR_N>>2)], RRLWR_N>>2, xof_bytes_buffer2, bitlen);
+  subpoly_unpack(&r->coeffs[3*(RRLWR_N>>2)], RRLWR_N>>2, xof_bytes_buffer3, bitlen);
+}
+
+/// @brief Generate a ring element with coefficients pseudo-randomly generated in the uniform distribution [-bitlen/2, bitlen/2-1]
+void ring_uniform_secret_x4(ring_element *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len) {
+  for(unsigned char i = 0; i < RRLWR_K; i++) {
+    poly_uniform_secret_x4(&r->x[i], bitlen, seed, seed_len, i);
+  }
+}
+
+// Uniform polynomial generation with 4 independent byte streams
+static void poly_uniform_secret(poly *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len, unsigned char coeff)
+{
+  unsigned char xof_bytes_buffer[RRLWR_MAX_SAMPLING_BITLEN*(RRLWR_N >> 3)]; // Allocate maximum length
+  unsigned char seed_buffer[RRLWR_MAX_SEED_LEN+2];                          // Allocate maximum length
+
+  // Concatenate the seed with the ring element index i
+  for(int32_t i = 0; i < seed_len; i++) {
+    seed_buffer[i] = seed[i];
+  }
+  seed_buffer[seed_len] = coeff;
+  seed_buffer[seed_len+1] = 0;
+
+  // Generate the output byte stream
+  RRLWR_XOF_SECRET(xof_bytes_buffer, bitlen*(RRLWR_N >> 3), seed_buffer, seed_len+2);
+
+  // Unpack into polynomial coefficients
+  poly_unpack(r, xof_bytes_buffer, bitlen);
+}
+
+/// @brief Generate a ring element with coefficients pseudo-randomly generated in the uniform distribution [-bitlen/2, bitlen/2-1]
+void ring_uniform_secret(ring_element *r, int32_t bitlen, const unsigned char *seed, int32_t seed_len) {
+  for(unsigned char i = 0; i < RRLWR_K; i++) {
+    poly_uniform_secret(&r->x[i], bitlen, seed, seed_len, i);
+  }
 }
