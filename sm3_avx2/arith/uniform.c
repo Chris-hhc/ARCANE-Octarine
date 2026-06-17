@@ -62,16 +62,13 @@ static void poly_uniform_public_x4(poly *r,
   #ifdef RRLWR_SIGN_BREAKDOWN
   uint64_t ts = cpucycles();
   #endif
-  shake128x4(buf + 0 * outlen,
-             buf + 1 * outlen,
-             buf + 2 * outlen,
-             buf + 3 * outlen,
-             outlen,
-             in0, in1, in2, in3,
-             (size_t)seed_len + 2);
+  RRLWR_XOF_PUBLIC(buf + 0 * outlen, outlen, in0, seed_len + 2);
+  RRLWR_XOF_PUBLIC(buf + 1 * outlen, outlen, in1, seed_len + 2);
+  RRLWR_XOF_PUBLIC(buf + 2 * outlen, outlen, in2, seed_len + 2);
+  RRLWR_XOF_PUBLIC(buf + 3 * outlen, outlen, in3, seed_len + 2);
   #ifdef RRLWR_SIGN_BREAKDOWN
   if(sign_test_measure_awin_base) {
-    sign_test_add_cycles(SIGN_TEST_KEYGEN_AWIN_BASE_SHAKE128X4, ts);
+    sign_test_add_cycles(SIGN_TEST_KEYGEN_AWIN_BASE_XOF, ts);
   }
   ts = cpucycles();
   #endif
@@ -110,13 +107,10 @@ static void poly_uniform_secret_x4(poly *r,
   set_seed_coeff_lane(in2, seed, seed_len, coeff, 2);
   set_seed_coeff_lane(in3, seed, seed_len, coeff, 3);
 
-  shake256x4(buf + 0 * outlen,
-             buf + 1 * outlen,
-             buf + 2 * outlen,
-             buf + 3 * outlen,
-             outlen,
-             in0, in1, in2, in3,
-             (size_t)seed_len + 2);
+  RRLWR_XOF_SECRET(buf + 0 * outlen, outlen, in0, seed_len + 2);
+  RRLWR_XOF_SECRET(buf + 1 * outlen, outlen, in1, seed_len + 2);
+  RRLWR_XOF_SECRET(buf + 2 * outlen, outlen, in2, seed_len + 2);
+  RRLWR_XOF_SECRET(buf + 3 * outlen, outlen, in3, seed_len + 2);
 
   poly_unpack(r, buf, bitlen);
 }

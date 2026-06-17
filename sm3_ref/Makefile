@@ -12,12 +12,12 @@ INCLUDES = -I$(BASE_FOLDER) -I$(UTILS_FOLDER) -I$(ARITH_FOLDER)
 SECURITY_LEVELS = 128 256 512
 
 SOURCES_RRLWR = $(ARITH_FOLDER)/fprime.c $(ARITH_FOLDER)/poly.c $(ARITH_FOLDER)/ring.c $(ARITH_FOLDER)/packing.c $(ARITH_FOLDER)/uniform.c sign_ring.c sign.c crt.c
-SOURCES_UTILS = $(UTILS_FOLDER)/fips202.c $(UTILS_FOLDER)/drng.c
+SOURCES_UTILS = $(UTILS_FOLDER)/auxfunc.c $(UTILS_FOLDER)/drng.c
 SOURCES = $(SOURCES_RRLWR) $(SOURCES_UTILS)
 BREAKDOWN_SOURCES = $(filter-out sign.c,$(SOURCES_RRLWR)) sign_test.c $(SOURCES_UTILS)
 
 HEADERS_RRLWR = $(ARITH_FOLDER)/fprime.h $(ARITH_FOLDER)/poly.h $(ARITH_FOLDER)/ring.h $(ARITH_FOLDER)/packing.h $(ARITH_FOLDER)/uniform.h parameters.h sign_ring.h sign.h crt.h
-HEADERS_UTILS = $(UTILS_FOLDER)/fips202.h $(UTILS_FOLDER)/drng.h
+HEADERS_UTILS = $(UTILS_FOLDER)/auxfunc.h $(UTILS_FOLDER)/drng.h
 HEADERS = $(HEADERS_RRLWR) $(HEADERS_UTILS)
 
 TEST_TARGETS = $(addprefix test/test_SIGN,$(SECURITY_LEVELS))

@@ -63,7 +63,7 @@ const char *sign_test_stage_name(unsigned int stage)
     "keygen.random_hash",
     "keygen.A_uniform_Awinx2",
     "keygen.Awin_base",
-    "keygen.Awin_base.shake128x4",
+    "keygen.Awin_base.xof",
     "keygen.Awin_base.unpack",
     "keygen.Awin_prepare_p1",
     "keygen.Awin_prepare_p2",

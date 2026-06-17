@@ -20,7 +20,7 @@
 #include <stdint.h>
 
 #include "drng.h"
-#include "fips202.h"
+#include "auxfunc.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -122,14 +122,18 @@ extern "C"
   #define GENERATE_RANDOM_BYTES(output, output_len, ctx) \
           get_random_number(ctx, output, 8*(output_len))
 
+  // Keep the byte-length interface used by the RRLWR code while calling the SM3 pseudoXOF bit-length API.
+  #define RRLWR_SM3_XOF(output, output_len, input, input_len) \
+          pseudoXOF(8ULL*(unsigned long long)(output_len), (const unsigned char *)(input), 8ULL*(unsigned long long)(input_len), (unsigned char *)(output))
+
   #define RRLWR_XOF_SECRET(output, output_len, input, input_len) \
-          shake256((uint8_t *)(output), (output_len), (const uint8_t *)(input), (input_len))
+          RRLWR_SM3_XOF((output), (output_len), (input), (input_len))
   #define RRLWR_XOF_PUBLIC(output, output_len, input, input_len) \
-          shake128((uint8_t *)(output), (output_len), (const uint8_t *)(input), (input_len))
+          RRLWR_SM3_XOF((output), (output_len), (input), (input_len))
   #define RRLWR_SIGN_HASH_H(output, output_len, input, input_len) \
-          shake256((uint8_t *)(output), (output_len), (const uint8_t *)(input), (input_len))
+          RRLWR_SM3_XOF((output), (output_len), (input), (input_len))
   #define RRLWR_SIGN_HASH_SAMPLE_C(output, input, input_len) \
-          shake256((uint8_t *)(output), RRLWR_SIGN_SAMPLE_C_LEN, (const uint8_t *)(input), (input_len))
+          RRLWR_SM3_XOF((output), RRLWR_SIGN_SAMPLE_C_LEN, (input), (input_len))
 
   // The choice of prime for the arithmetic does not affect the algorithm, only the implementation.
   #define RRLWR_SIGN_PRIME1             (0x3fff7801)

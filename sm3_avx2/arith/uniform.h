@@ -18,8 +18,6 @@
 #define UNIFORM_H
 
 #include "parameters.h"
-#include "fips202.h"
-#include "fips202x4.h"
 #include "ring.h"
 #include "packing.h"
 

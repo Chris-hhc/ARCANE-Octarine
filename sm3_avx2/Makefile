@@ -10,16 +10,15 @@ RM = /bin/rm
 BASE_FOLDER = .
 ARITH_FOLDER = ./arith
 UTILS_FOLDER = ./utils
-KECCAK4X_FOLDER = $(UTILS_FOLDER)/keccak4x
-INCLUDES = -I$(BASE_FOLDER) -I$(UTILS_FOLDER) -I$(KECCAK4X_FOLDER) -I$(ARITH_FOLDER)
+INCLUDES = -I$(BASE_FOLDER) -I$(UTILS_FOLDER) -I$(ARITH_FOLDER)
 
 SECURITY_LEVELS = 128 256 512
 
 SOURCES_RRLWR = $(ARITH_FOLDER)/fprime.c $(ARITH_FOLDER)/poly.c $(ARITH_FOLDER)/ring.c $(ARITH_FOLDER)/packing.c $(ARITH_FOLDER)/uniform.c $(ARITH_FOLDER)/ntt.S $(ARITH_FOLDER)/intt.S $(ARITH_FOLDER)/pointwise.S $(ARITH_FOLDER)/poly_avx.S $(ARITH_FOLDER)/packing_avx.S sign_ring.c sign.c crt.c crt_avx.S
-SOURCES_UTILS = $(UTILS_FOLDER)/fips202.c $(UTILS_FOLDER)/fips202x4.c $(KECCAK4X_FOLDER)/KeccakP-1600-times4-SIMD256.c
+SOURCES_UTILS = $(UTILS_FOLDER)/auxfunc.c
 SOURCES = $(SOURCES_RRLWR) $(SOURCES_UTILS)
 HEADERS_RRLWR = $(ARITH_FOLDER)/fprime.h $(ARITH_FOLDER)/poly.h $(ARITH_FOLDER)/ring.h $(ARITH_FOLDER)/packing.h $(ARITH_FOLDER)/uniform.h $(ARITH_FOLDER)/ntt.h $(ARITH_FOLDER)/ntt_param.h $(ARITH_FOLDER)/intt_param.h $(ARITH_FOLDER)/ntt_avx_macros.inc parameters.h sign_ring.h sign.h crt.h
-HEADERS_UTILS = $(UTILS_FOLDER)/fips202.h $(UTILS_FOLDER)/fips202x4.h $(KECCAK4X_FOLDER)/KeccakP-1600-times4-SnP.h $(KECCAK4X_FOLDER)/KeccakP-align.h $(KECCAK4X_FOLDER)/KeccakP-brg_endian.h $(KECCAK4X_FOLDER)/KeccakP-SIMD256-config.h
+HEADERS_UTILS = $(UTILS_FOLDER)/auxfunc.h $(UTILS_FOLDER)/drng.h
 HEADERS = $(HEADERS_RRLWR) $(HEADERS_UTILS)
 
 TEST_TARGETS = $(addprefix test/test_SIGN,$(SECURITY_LEVELS))
