@@ -1,8 +1,8 @@
-SUBDIRS = avx2 ref sm3_ref
+SUBDIRS = avx2 ref sm3_ref sm3_avx2
 
 .DEFAULT_GOAL := all
 
-.PHONY: all test speed KAT breakdown clean avx2 ref sm3_ref FORCE
+.PHONY: all test speed KAT breakdown clean avx2 ref sm3_ref sm3_avx2 FORCE
 
 all test speed KAT breakdown:
 	@for dir in $(SUBDIRS); do \
@@ -23,6 +23,9 @@ ref:
 sm3_ref:
 	$(MAKE) -C sm3_ref
 
+sm3_avx2:
+	$(MAKE) -C sm3_avx2
+
 avx2-%: FORCE
 	$(MAKE) -C avx2 $*
 
@@ -31,5 +34,8 @@ ref-%: FORCE
 
 sm3_ref-%: FORCE
 	$(MAKE) -C sm3_ref $*
+
+sm3_avx2-%: FORCE
+	$(MAKE) -C sm3_avx2 $*
 
 FORCE:
